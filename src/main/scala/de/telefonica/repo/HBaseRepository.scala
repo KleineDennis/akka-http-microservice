@@ -15,6 +15,12 @@ import scala.concurrent.Future
 class HBaseRepository {
   import scala.concurrent.ExecutionContext.Implicits.global
 
+//  val config = com.typesafe.config.ConfigFactory.load
+//  val conf = HBaseConfiguration.create()
+//  conf.set("hbase.zookeeper.quorum", config.getString("hbase.zookeeper.quorum"))
+//  conf.set("hbase.zookeeper.property.clientPort", config.getString("hbase.zookeeper.property.clientPort"))
+//  conf.set("zookeeper.znode.parent", config.getString("zookeeper.znode.parent"))
+
   def list: Future[Tables] = Future {
     //get the configuration from hbase -> conf/hbase-site.xml
     val conf = HBaseConfiguration.create()
