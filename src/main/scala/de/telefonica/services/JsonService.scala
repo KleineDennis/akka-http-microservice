@@ -18,6 +18,7 @@ final case class Version(version: String)
 final case class Server(version: String, master: String, avgload: Double, clusterId: String, servers: List[String], requests: Int)
 final case class Column(family: String, qualifier: String, value: String)
 final case class Row(rowkey: String, columns: List[Column])
+final case class Rows(rowkeys: List[String], columns: List[String])
 
 // collect your json format instances into a support trait:
 trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
@@ -27,9 +28,10 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val server = jsonFormat6(Server)
   implicit val column = jsonFormat3(Column)
   implicit val rowkey = jsonFormat2(Row)
+  implicit val rowkeys = jsonFormat2(Rows)
 }
 
-trait JsonService extends Directives with JsonSupport  {
+trait JsonService extends Directives with JsonSupport {
   val logger: LoggingAdapter
   val repo = new HBaseRepository
 
@@ -37,63 +39,76 @@ trait JsonService extends Directives with JsonSupport  {
   def getClusterStatus(): Future[Server] = repo.status
   def getUserTables(): Future[Tables] = repo.list
   def getSingleRowColumnValues(table: String, row: String, cols: List[String]): Future[Row] = repo.row(table, row, cols)
-//  def getSingleRowColumnValues(table: String, row: String, cols: List[String]): Row = Await.result(repo.row(table, row, cols), 3 second)
+  //  def getSingleRowColumnValues(table: String, row: String, cols: List[String]): Row = Await.result(repo.row(table, row, cols), 3 second)
+  def getFilteredRowColumnValues(table: String, rows: List[String], cols: List[String]): Future[List[Row]] = repo.filter(table, rows, cols)
 
 
   /**
     * Reference: https://hbase.apache.org/book.html#_rest
     *
-    *  GET /api/v1/                   - List of all non-system tables
+    * GET /api/v1/                   - List of all non-system tables
     *
     * Cluster-Wide Endpoints
-    *  GET /api/v1/version/cluster    - Version of HBase running on this cluster
-    *  GET /api/v1/status/cluster     - Cluster status
-    *  GET /api/v1/                   - List of all non-system tables
+    * GET /api/v1/version/cluster    - Version of HBase running on this cluster
+    * GET /api/v1/status/cluster     - Cluster status
+    * GET /api/v1/                   - List of all non-system tables
     *
     * Endpoints for Get Operations
-    *  GET /api/v1/{table}/{row}      - Get all columns of a single row
-    *  GET /api/v1/{table}/{row}/{column:qualifier} - Get the value of a single column
-    *  GET /api/v1/{table}/{row}/{col1, col2,..., coln}  - Get values from all requested columns of a single row      --deprecated wird ersetzt durch  GET /api/v1/{table}/{row}?filtered
+    * GET /api/v1/{table}/{row}      - Get all columns of a single row
+    * GET /api/v1/{table}/{row}/{column:qualifier} - Get the value of a single column
+    * GET /api/v1/{table}/{row}/{col1, col2,..., coln}  - Get values from all requested columns of a single row      --deprecated wird ersetzt durch  GET /api/v1/{table}/{row}?filtered
     *
     * Endpoints for Scan Operations
-    *  PUT /api/v1//{table}/scanner   - Get a Scanner object
-    *  GET /api/v1/{table}/scanner/{scannerId}  - Get the next batch from the scanner
-    *  DELETE /api/v1/{table}/scanner/{scannerId} - Deletes the scanner and frees the resources it used
+    * PUT /api/v1//{table}/scanner   - Get a Scanner object
+    * GET /api/v1/{table}/scanner/{scannerId}  - Get the next batch from the scanner
+    * DELETE /api/v1/{table}/scanner/{scannerId} - Deletes the scanner and frees the resources it used
     *
     * Endpoints for Put Operations
-    *  PUT /api/v1/{table}/{rowkey}   - Write a row to a table
+    * PUT /api/v1/{table}/{rowkey}   - Write a row to a table
+    *
+    * Endpoints for Post Operations
+    * POST /api/v1/{table}           - Get filtered column values of rows
+    *
     */
   val route =
-      pathPrefix("api" / "v1") {
-          get {
-            pathSingleSlash {
-              logger.info("List of all non-system tables")
-              complete(getUserTables)
-            } ~
-              path("ping") {
-                logger.info("simple JSON rest ping")
-                complete("JSON Service is working (PONG!)")
-              } ~
-              path("version" / "cluster") {
-                logger.info("Version of HBase running on this cluster")
-                complete(getClusterVersion)
-              } ~
-              path("status" / "cluster") {
-                logger.info("Cluster status")
-                complete(getClusterStatus)
-              } ~
-              path(Segment / Segment / Segments) { case (table, row, cols) =>
-                logger.info(s"Get all the value from columns of a single row, table: $table row: $row cols: $cols")
-                complete(getSingleRowColumnValues(table, row, cols))
-              } ~
-              path(Segment / Segment) { case (table, row) =>
-                logger.info(s"Get all values from a single row, table: $table row: $row")
-                complete(getSingleRowColumnValues(table, row, List.empty))
-              } ~
-              path(Segment / "scanner" / IntNumber) { case (table, scannerId) =>
-                logger.info("Get the next batch from the scanner")
-                complete(s"List the value from Table: $table scanner-id: $scannerId")
-              }
+    pathPrefix("api" / "v1") {
+      get {
+        pathSingleSlash {
+          logger.info("List of all non-system tables")
+          complete(getUserTables)
+        } ~
+          path("ping") {
+            logger.info("simple JSON rest ping")
+            complete("JSON Service is working (PONG!)")
+          } ~
+          path("version" / "cluster") {
+            logger.info("Version of HBase running on this cluster")
+            complete(getClusterVersion)
+          } ~
+          path("status" / "cluster") {
+            logger.info("Cluster status")
+            complete(getClusterStatus)
+          } ~
+          path(Segment / Segment / Segments) { case (table, row, cols) =>
+            logger.info(s"Get all the value from columns of a single row, table: $table row: $row cols: $cols")
+            complete(getSingleRowColumnValues(table, row, cols))
+          } ~
+          path(Segment / Segment) { case (table, row) =>
+            logger.info(s"Get all values from a single row, table: $table row: $row")
+            complete(getSingleRowColumnValues(table, row, List.empty))
+          } ~
+          path(Segment / "scanner" / IntNumber) { case (table, scannerId) =>
+            logger.info("Get the next batch from the scanner")
+            complete(s"List the value from Table: $table scanner-id: $scannerId")
           }
+      } ~
+      post {
+        path(Segment) { case (table) => {}
+          entity(as[Rows]) { rows =>
+            logger.info(s"Get filtered column values of filtered rows, table: $table, rowkeys: $rows")
+            complete(getFilteredRowColumnValues(table, rows.rowkeys, rows.columns))
+          }
+        }
       }
+    }
 }

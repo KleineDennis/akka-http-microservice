@@ -5,10 +5,10 @@ version := "1.0"
 scalaVersion := "2.11.8"
 
 // Change this to another test framework if you prefer
-libraryDependencies += "com.typesafe.akka" %% "akka-http" % "10.0.8"
-libraryDependencies += "com.typesafe.akka" %% "akka-http-xml" % "10.0.8"
-libraryDependencies += "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.8"
-libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % "10.0.8"
+libraryDependencies += "com.typesafe.akka" %% "akka-http" % "10.0.7"
+libraryDependencies += "com.typesafe.akka" %% "akka-http-xml" % "10.0.7"
+libraryDependencies += "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.7"
+libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % "10.0.7"
 libraryDependencies += "com.typesafe.akka" % "akka-slf4j_2.11" % "2.4.19"
 
 libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.3"

@@ -1,6 +1,6 @@
 package de.telefonica.repo
 
-import de.telefonica._
+
 import de.telefonica.services._
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Get}
 import org.apache.hadoop.hbase.util.Bytes
@@ -79,5 +79,38 @@ class HBaseRepository {
     table.close()
     connection.close()
     Row(rowkey, col)
+  }
+
+  def filter(tablename: String, rowkeys: List[String], columns: List[String]): Future[List[Row]] = Future {
+
+    //get the configuration from hbase -> conf/hbase-site.xml
+    val conf = HBaseConfiguration.create()
+    val connection = ConnectionFactory.createConnection(conf)
+    val table = connection.getTable(TableName.valueOf(tablename))
+
+    import scala.collection.JavaConverters._
+    val rows: java.util.List[Get] = rowkeys.map(r => new Get(Bytes.toBytes(r))).asJava  //convert Scala List to Java List for HBase BulkGet
+    val result = table.get(rows)  //HBase BulkGet
+    val colsArr = result.map(c => c.rawCells())
+
+
+    val ret = colsArr.map(cellArr => {
+      val listCols = cellArr.map(c => Column(Bytes.toString(CellUtil.cloneFamily(c)), Bytes.toString(CellUtil.cloneQualifier(c)), Bytes.toString(CellUtil.cloneValue(c)))).toList
+      val k = rowkeys.head //Bytes.toString(CellUtil.cloneRow(k))
+      Row(k, listCols)
+      }
+    ).toList
+
+    table.close()
+    connection.close()
+    ret
+
+
+//      List(
+//        Row("test1", List(Column("test1","test1","test1"),Column("test2","test2","test2"), Column("test3","test3","test3"))),
+//        Row("test2", List(Column("test1","test1","test1"),Column("test2","test2","test2"), Column("test3","test3","test3"))),
+//        Row("test3", List(Column("test1","test1","test1"),Column("test2","test2","test2"), Column("test3","test3","test3")))
+//      )
+
   }
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="5 seconds" debug="true">
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <target>System.out</target>
         <encoder>
@@ -40,9 +41,9 @@
 
 
     <root level="INFO">
-        <appender-ref ref="FILE"/>
+        <!--<appender-ref ref="FILE"/>-->
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="kafkaAppender" />
+        <!--<appender-ref ref="kafkaAppender" />-->
     </root>
 </configuration>
 

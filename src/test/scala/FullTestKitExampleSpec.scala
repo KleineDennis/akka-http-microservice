@@ -58,7 +58,7 @@ class FullTestKitExampleSpec extends WordSpec with Matchers with ScalatestRouteT
 }
 
 
-// Just For testing without routes
+// Just For testing without repo
 trait RepositoryTestImpl extends JsonService {
   override def getUserTables(): Future[Tables] = Future.successful(Tables(List("digitalx:lkp_msisdn", "digitalx:profiler2", "test")))
   override def getSingleRowColumnValues(table: String, row: String, cols: List[String]): Future[Row] = Future.successful(Row("1234567", List(Column("d","cli","Max Mustermann"), Column("d","family","single"), Column("d","job","Arbeiter"))))
